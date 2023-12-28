@@ -36,26 +36,36 @@ namespace electrodiux::voxel::gfx {
 	}
 
 	void Camera::setFov(float fov) {
+		if(this->fov == fov) return;
+
 		this->fov = fov;
 		updateProjectionMatrix();
 	}
 
 	void Camera::setAspect(float aspect) {
+		if(this->aspect == aspect) return;
+
 		this->aspect = aspect;
 		updateProjectionMatrix();
 	}
 
-	void Camera::setNear(float) {
+	void Camera::setNear(float near) {
+		if(this->near == near) return;
+
 		this->near = near;
 		updateProjectionMatrix();
 	}
 
-	void Camera::setFar(float) {
+	void Camera::setFar(float far) {
+		if(this->far == far) return;
+
 		this->far = far;
 		updateProjectionMatrix();
 	}
 
-	void Camera::setProjection(float fov, float aspect, float, float) {
+	void Camera::setProjection(float fov, float aspect, float near, float far) {
+		if(this->fov == fov && this->aspect == aspect && this->near == near && this->far == far) return;
+
 		this->fov = fov;
 		this->aspect = aspect;
 		this->near = near;

@@ -123,10 +123,10 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);GLEW_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)libraries\GLFW\include;$(SolutionDir)libraries\GLEW\include;$(SolutionDir)libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libraries\GLFW\include;$(SolutionDir)libraries\GLEW\include;$(SolutionDir)libraries\include;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -136,9 +136,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\world\BlockModel.h" />
+    <ClInclude Include="src\world\BlockRegister.h" />
     <ClInclude Include="src\input\Keyboard.h" />
     <ClInclude Include="src\input\input.h" />
     <ClInclude Include="src\input\Mouse.h" />
+    <ClInclude Include="src\math\vector.h" />
+    <ClInclude Include="src\physics\AABB.h" />
+    <ClInclude Include="src\physics\physics.h" />
+    <ClInclude Include="src\physics\Raycast.h" />
     <ClInclude Include="src\rendering\chunk\ChunkMesh.h" />
     <ClInclude Include="libraries\include\stb\stb_image.h" />
     <ClInclude Include="src\rendering\Camera.h" />
@@ -152,8 +158,13 @@
     <ClInclude Include="src\rendering\Texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\world\BlockModel.cpp" />
+    <ClCompile Include="src\world\BlockRegister.cpp" />
     <ClCompile Include="src\input\Keyboard.cpp" />
     <ClCompile Include="src\input\Mouse.cpp" />
+    <ClCompile Include="src\math\vector.cpp" />
+    <ClCompile Include="src\physics\AABB.cpp" />
+    <ClCompile Include="src\physics\Raycast.cpp" />
     <ClCompile Include="src\rendering\chunk\ChunkMesh.cpp" />
     <ClCompile Include="libraries\include\stb\stb_image.cpp" />
     <ClCompile Include="src\rendering\Camera.cpp" />
@@ -162,6 +173,7 @@
     <ClCompile Include="src\rendering\Shader.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\rendering\Window.cpp" />
+    <ClCompile Include="src\world\Block.cpp" />
     <ClCompile Include="src\world\ChunkData.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\rendering\Texture.cpp" />

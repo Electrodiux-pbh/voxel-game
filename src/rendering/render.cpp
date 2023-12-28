@@ -16,22 +16,26 @@
 #include <cmath>
 #include <limits>
 
+#include "../physics/physics.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "../world/BlockRegister.h"
 
 using namespace electrodiux::voxel;
 
 namespace electrodiux {
 
 	constexpr float border_vertices[] = {
-		-0.001f, -0.001f, -0.001f,  // Vertex 0
-		1.001f, -0.001f, -0.001f,   // Vertex 1
-		1.001f, 1.001f, -0.001f,    // Vertex 2
-		-0.001f, 1.001f, -0.001f,   // Vertex 3
-		-0.001f, -0.001f, 1.001f,   // Vertex 4
-		1.001f, -0.001f, 1.001f,    // Vertex 5
-		1.001f, 1.001f, 1.001f,     // Vertex 6
-		-0.001f, 1.001f, 1.001f     // Vertex 7
+		-0.0001f, -0.0001f, -0.0001f,  // Vertex 0
+		1.0001f, -0.0001f, -0.0001f,   // Vertex 1
+		1.0001f, 1.0001f, -0.0001f,    // Vertex 2
+		-0.0001f, 1.0001f, -0.0001f,   // Vertex 3
+		-0.0001f, -0.0001f, 1.0001f,   // Vertex 4
+		1.0001f, -0.0001f, 1.0001f,    // Vertex 5
+		1.0001f, 1.0001f, 1.0001f,     // Vertex 6
+		-0.0001f, 1.0001f, 1.0001f     // Vertex 7
 	};
 
 	constexpr unsigned int border_indices[] = {
@@ -92,105 +96,22 @@ namespace electrodiux {
 	gfx::ShaderProgram* shader;
 	gfx::Texture* texture;
 
-	bool rayIntersectsAABB(const glm::vec3& rayOrigin, float rayDirectionX, float rayDirectionY, const glm::vec3& boxMin, const glm::vec3& boxMax) {
-		// Convert degrees to radians
-		float radiansX = glm::radians(rayDirectionX);
-		float radiansY = glm::radians(rayDirectionY);
-
-		float cosX = std::cos(radiansX);
-		float sinX = std::sin(radiansX);
-		float cosY = std::cos(radiansY);
-		float sinY = std::sin(radiansY);
-
-		glm::vec3 rayDirection(
-			1.0f / (cosX * sinY),
-			1.0f / (-sinX),
-			1.0f / (-cosY * cosX)
-		);
-
-		// Calculate t-values for each pair of planes
-		glm::vec3 tMin = (boxMin - rayOrigin) * rayDirection;
-		glm::vec3 tMax = (boxMax - rayOrigin) * rayDirection;
-
-		// Find the maximum and minimum t-values for each axis
-		glm::vec3 tEnter = glm::min(tMin, tMax);
-		glm::vec3 tExit = glm::max(tMin, tMax);
-
-		// Find the maximum of the minimum t-values (entry) and the minimum of the maximum t-values (exit)
-		float _tEntry = glm::max(glm::max(tEnter.x, tEnter.y), tEnter.z);
-		float _tExit = glm::min(glm::min(tExit.x, tExit.y), tExit.z);
-
-		// Check if the ray intersects the AABB
-		return (_tEntry < _tExit) && (_tExit > 0.0f);
-	}
-
-	glm::vec3 rayIntersectionAABB(const glm::vec3& rayOrigin, float rayDirectionX, float rayDirectionY, const glm::vec3& boxMin, const glm::vec3& boxMax) {
-		// Convert degrees to radians
-		float radiansX = glm::radians(rayDirectionX);
-		float radiansY = glm::radians(rayDirectionY);
-
-		float cosX = std::cos(radiansX);
-		float sinX = std::sin(radiansX);
-		float cosY = std::cos(radiansY);
-		float sinY = std::sin(radiansY);
-
-		glm::vec3 rayDirection(
-			1.0f / (cosX * sinY),
-			1.0f / (-sinX),
-			1.0f / (-cosY * cosX)
-		);
-
-		// Calculate t-values for each pair of planes
-		glm::vec3 tMin = (boxMin - rayOrigin) * rayDirection;
-		glm::vec3 tMax = (boxMax - rayOrigin) * rayDirection;
-
-		// Find the maximum and minimum t-values for each axis
-		glm::vec3 tEnter = glm::min(tMin, tMax);
-		glm::vec3 tExit = glm::max(tMin, tMax);
-
-		// Find the maximum of the minimum t-values (entry) and the minimum of the maximum t-values (exit)
-		float _tEntry = glm::max(glm::max(tEnter.x, tEnter.y), tEnter.z);
-		float _tExit = glm::min(glm::min(tExit.x, tExit.y), tExit.z);
-
-		// Check if the ray intersects the AABB
-		if ((_tEntry < _tExit) && (_tExit > 0.0f)) {
-			// Calculate the normal vector of the hit face
-			glm::vec3 hitNormal(0.0f);
-
-			if (tEnter.x > tEnter.y && tEnter.x > tEnter.z) {
-				hitNormal.x = (rayDirection.x > 0.0f) ? -1.0f : 1.0f;
-			}
-			else if (tEnter.y > tEnter.x && tEnter.y > tEnter.z) {
-				hitNormal.y = (rayDirection.y > 0.0f) ? -1.0f : 1.0f;
-			}
-			else {
-				hitNormal.z = (rayDirection.z > 0.0f) ? -1.0f : 1.0f;
-			}
-
-			return hitNormal;
-		}
-
-		// No intersection
-		return glm::vec3(0.0f, 0.0f, 0.0f);
-	}
-
-	glm::vec3 getRaycastedBlock(const glm::vec3& origin, const glm::vec3& direction, world::Chunk* chunk) {
-		glm::vec3 closest_block = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+	math::vec3 getRaycastedBlock(const math::vec3& origin, const math::vec3& direction, world::Chunk* chunk) {
+		math::vec3 closest_block = math::vec3(std::numeric_limits<float>::quiet_NaN());
 		float closest_distance = std::numeric_limits<float>::max();
 
 		for (int x = 0; x < world::CHUNK_SIZE; x++) {
 			for (int y = 0; y < world::CHUNK_SIZE; y++) {
 				for (int z = 0; z < world::CHUNK_SIZE; z++) {
-					if (chunk->getBlock(x, y, z) != world::AIR) {
-						
+					if (chunk->getBlock(x, y, z) != block::AIR) {
 						world::ChunkLocation chunk_loc = chunk->getChunkLocation();
-						glm::vec3 block_pos = glm::vec3(x + chunk_loc.x * world::CHUNK_SIZE, y + chunk_loc.y * world::CHUNK_SIZE, z + chunk_loc.z * world::CHUNK_SIZE);
-
-						if (!rayIntersectsAABB(origin, direction.x, direction.y, block_pos, block_pos + glm::vec3(1.0f))) {
+						math::vec3 block_pos = math::vec3(x + chunk_loc.x * world::CHUNK_SIZE, y + chunk_loc.y * world::CHUNK_SIZE, z + chunk_loc.z * world::CHUNK_SIZE);
+						
+						if (!phy::intersects(phy::raycastFromAnglesDeg(origin, direction.x, direction.y), phy::AABB(block_pos, block_pos + math::vec3(1.0f)))) {
 							continue;
 						}
 
-						float distance = glm::distance(origin, block_pos);
+						float distance = math::distance(origin, block_pos);
 						if (distance < closest_distance) {
 							closest_block = block_pos;
 							closest_distance = distance;
@@ -203,26 +124,47 @@ namespace electrodiux {
 		return closest_block;
 	}
 
-	glm::vec3 getAdjacentRaycastedBlock(const glm::vec3& origin, const glm::vec3& direction, world::Chunk* chunk) {
-		glm::vec3 closest_block = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+	math::vec3 getAdjacentRaycastedBlock(const math::vec3& origin, const math::vec3& direction, world::Chunk* chunk) {
+		math::vec3 closest_block = math::vec3(std::numeric_limits<float>::quiet_NaN());
 		float closest_distance = std::numeric_limits<float>::max();
 
 		for (int x = 0; x < world::CHUNK_SIZE; x++) {
 			for (int y = 0; y < world::CHUNK_SIZE; y++) {
 				for (int z = 0; z < world::CHUNK_SIZE; z++) {
-					if (chunk->getBlock(x, y, z) != world::AIR) {
+					if (chunk->getBlock(x, y, z) != block::AIR) {
 
 						world::ChunkLocation chunk_loc = chunk->getChunkLocation();
-						glm::vec3 block_pos = glm::vec3(x + chunk_loc.x * world::CHUNK_SIZE, y + chunk_loc.y * world::CHUNK_SIZE, z + chunk_loc.z * world::CHUNK_SIZE);
+						math::vec3 block_pos = math::vec3(x + chunk_loc.x * world::CHUNK_SIZE, y + chunk_loc.y * world::CHUNK_SIZE, z + chunk_loc.z * world::CHUNK_SIZE);
 
-						glm::vec3 hit_normal = rayIntersectionAABB(origin, direction.x, direction.y, block_pos, block_pos + glm::vec3(1.0f));
+						phy::AABBface face = phy::intersectsFace(phy::raycastFromAnglesDeg(origin, direction.x, direction.y), phy::AABB(block_pos, block_pos + math::vec3(1.0f)));
 
-						if (hit_normal.x == 0 && hit_normal.y == 0 && hit_normal.z == 0) {
+						if (face == 0) {
 							continue;
 						}
 
-						float distance = glm::distance(origin, block_pos);
+						float distance = math::distance(origin, block_pos);
 						if (distance < closest_distance) {
+							math::vec3 hit_normal = math::vec3(0.0f);
+
+							if (face == phy::FACE_BOTTOM) {
+								hit_normal = math::vec3(0.0f, -1.0f, 0.0f);
+							}
+							else if (face == phy::FACE_TOP) {
+								hit_normal = math::vec3(0.0f, 1.0f, 0.0f);
+							}
+							else if (face == phy::FACE_LEFT) {
+								hit_normal = math::vec3(-1.0f, 0.0f, 0.0f);
+							}
+							else if (face == phy::FACE_RIGHT) {
+								hit_normal = math::vec3(1.0f, 0.0f, 0.0f);
+							}
+							else if (face == phy::FACE_FRONT) {
+								hit_normal = math::vec3(0.0f, 0.0f, -1.0f);
+							}
+							else if (face == phy::FACE_BACK) {
+								hit_normal = math::vec3(0.0f, 0.0f, 1.0f);
+							}
+
 							closest_block = block_pos + hit_normal;
 							closest_distance = distance;
 						}
@@ -268,18 +210,22 @@ namespace electrodiux {
 			y--;
 		}
 
-		float speed = input::keyboard->isKeyPressed(GLFW_KEY_LEFT_CONTROL) ? 6.0f : 3.0f;
+		float speed = 4.317f;
+		if (input::keyboard->isKeyPressed(GLFW_KEY_LEFT_CONTROL)) {
+			speed = 7.0f;
+			camera->setFov(130.0f);
+		} else {
+			camera->setFov(120.0f);
+		}
 
 		camera->position += (glm::vec3(x, y, z) * deltaTime * speed);
 	}
 
-	float mouseSensitivity = 3.0f;
+	float mouseSensitivity = 4.5f;
 
 	void cameraRotate(gfx::Camera* camera, float deltaTime) {
-		mouseSensitivity += input::mouse->getScrollY() * 0.1f;
-
-		camera->rotation.x += input::mouse->getDY() * deltaTime * mouseSensitivity;
-		camera->rotation.y += input::mouse->getDX() * deltaTime * mouseSensitivity;
+		camera->rotation.x += (float)(input::mouse->getDY() * deltaTime * mouseSensitivity);
+		camera->rotation.y += (float)(input::mouse->getDX() * deltaTime * mouseSensitivity);
 	}
 	
 	float aspect_ratio = 800.0f / 600.0f;
@@ -354,9 +300,11 @@ namespace electrodiux {
 	void renderBlockBorder() {
 		border_shader->use();
 		glLineWidth(2.0f);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		glm::mat4 transform = glm::translate(glm::mat4(1.0f), getRaycastedBlock(camera->position, camera->rotation, chunk));
+		math::vec3 cam_pos = math::vec3(camera->position.x, camera->position.y, camera->position.z);
+		math::vec3 cam_dir = math::vec3(camera->rotation.x, camera->rotation.y, camera->rotation.z);
+		math::vec3 pos = getRaycastedBlock(cam_pos, cam_dir, chunk);
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, pos.z));
 
 		border_shader->setMat4("projection", camera->getProjectionMatrix());
 		border_shader->setMat4("view", camera->calculateViewMatrix());
@@ -364,7 +312,6 @@ namespace electrodiux {
 
 		border->render();
 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		border_shader->detach();
 	}
 
@@ -387,7 +334,11 @@ namespace electrodiux {
 		renderCrosshair();
 	}
 
+	world::Block selected_block;
+
 	void renderLoop() {
+		selected_block = block::DIRT;
+
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 
@@ -409,16 +360,27 @@ namespace electrodiux {
 			if (!input::keyboard->isKeyPressed(GLFW_KEY_F1)) {
 				if (input::mouse->isButtonClicked(input::MOUSE_BUTTON_LEFT)) {
 					world::ChunkLocation chunk_loc = chunk->getChunkLocation();
-					glm::vec3 pos = getRaycastedBlock(camera->position, camera->rotation, chunk);
-					chunk->setBlock(pos.x - (chunk_loc.x * world::CHUNK_SIZE), pos.y - (chunk_loc.y * world::CHUNK_SIZE), pos.z - (chunk_loc.z * world::CHUNK_SIZE), world::AIR);
+					math::vec3 cam_pos = math::vec3(camera->position.x, camera->position.y, camera->position.z);
+					math::vec3 cam_dir = math::vec3(camera->rotation.x, camera->rotation.y, camera->rotation.z);
+					math::vec3 pos = getRaycastedBlock(cam_pos, cam_dir, chunk);
+					chunk->setBlock((int)pos.x - (chunk_loc.x * world::CHUNK_SIZE), (int)pos.y - (chunk_loc.y * world::CHUNK_SIZE), (int)pos.z - (chunk_loc.z * world::CHUNK_SIZE), block::AIR);
 					updateChunkMesh();
 				}
 
 				if (input::mouse->isButtonClicked(input::MOUSE_BUTTON_RIGHT)) {
 					world::ChunkLocation chunk_loc = chunk->getChunkLocation();
-					glm::vec3 pos = getAdjacentRaycastedBlock(camera->position, camera->rotation, chunk);
-					chunk->setBlock(pos.x - (chunk_loc.x * world::CHUNK_SIZE), pos.y - (chunk_loc.y * world::CHUNK_SIZE), pos.z - (chunk_loc.z * world::CHUNK_SIZE), world::DIRT);
+					math::vec3 cam_pos = math::vec3(camera->position.x, camera->position.y, camera->position.z);
+					math::vec3 cam_dir = math::vec3(camera->rotation.x, camera->rotation.y, camera->rotation.z);
+					math::vec3 pos = getAdjacentRaycastedBlock(cam_pos, cam_dir, chunk);
+					chunk->setBlock((int)pos.x - (chunk_loc.x * world::CHUNK_SIZE), (int)pos.y - (chunk_loc.y * world::CHUNK_SIZE), (int)pos.z - (chunk_loc.z * world::CHUNK_SIZE), selected_block);
 					updateChunkMesh();
+				}
+
+				if (input::keyboard->isKeyTyped(GLFW_KEY_E)) {
+					selected_block++;
+					if (selected_block > 7) {
+						selected_block = block::DIRT;
+					}
 				}
 
 				shader->setMat4("projection", camera->getProjectionMatrix());
@@ -453,7 +415,7 @@ namespace electrodiux {
 		camera->rotation = glm::vec3(0.0f, 90.0f, 0.0f);
 
 		shader = gfx::createShaderProgramFromFile("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl");
-		texture = gfx::loadTextureFromFile("resources/textures/dirt.png", GL_NEAREST, false);
+		texture = gfx::loadTextureFromFile("resources/textures/atlas.png", GL_NEAREST, false);
 
 		border_shader = gfx::createShaderProgramFromFile("resources/shaders/border_vertex.glsl", "resources/shaders/border_fragment.glsl");
 		border_shader->use();
@@ -466,9 +428,12 @@ namespace electrodiux {
 
 		for (int x = 0; x < world::CHUNK_SIZE; x++) {
 			for (int z = 0; z < world::CHUNK_SIZE; z++) {
-				for (int y = 0; y < 4; y++) {
-					chunk->setBlock(x, y, z, world::DIRT);
-				}
+				chunk->setBlock(x, 0, z, block::STONE);
+				chunk->setBlock(x, 1, z, block::STONE);
+				chunk->setBlock(x, 2, z, block::STONE);
+				chunk->setBlock(x, 3, z, block::DIRT);
+				chunk->setBlock(x, 4, z, block::DIRT);
+				chunk->setBlock(x, 5, z, block::GRASS);
 			}
 		}
 

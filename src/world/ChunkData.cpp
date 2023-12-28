@@ -8,7 +8,7 @@ namespace electrodiux::voxel::world {
     }
 
     Block ArrayChunkData::getBlock(int x, int y, int z) const {
-        if(isOutOfBounds(x, y, z)) return AIR;
+        if(isOutOfBounds(x, y, z)) return block::AIR;
         Block block = Block(this->blocks[calculateChunkIndex(x, y, z)]);
         return block;
     }

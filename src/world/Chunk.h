@@ -43,7 +43,7 @@ namespace electrodiux::voxel::world {
 
 		virtual void setBlock(int x, int y, int z, Block block) {}
 
-		virtual Block getBlock(int x, int y, int z) const { return AIR; }
+		virtual Block getBlock(int x, int y, int z) const { return block::AIR; }
 	};
 
 	/*class PalleteChunkData : public ChunkData {

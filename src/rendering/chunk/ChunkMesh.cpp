@@ -3,6 +3,8 @@
 #include "ChunkMesh.h"
 #include "../../world/Chunk.h"
 
+#include "../../world/BlockRegister.h"
+
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -38,6 +40,7 @@ constexpr char FACE_TOP_MASK = 0b00010000;
 constexpr char FACE_BOTTOM_MASK = 0b00100000;
 
 constexpr char NO_FACES_MASK = 0b00000000;
+constexpr char ALL_FACES_MASK = 0b00111111;
 
 constexpr GLfloat cube_vertices[] = {
 	0.0f, 1.0f, 0.0f,
@@ -71,44 +74,6 @@ constexpr GLfloat cube_vertices[] = {
 	1.0f, 0.0f, 1.0f
 };
 
-constexpr GLfloat cube_tex_coords[] = {
-	// Front face
-	1.0f, 0.0f,
-	0.0f, 0.0f,
-	0.0f, 1.0f,
-	1.0f, 1.0f,
-
-	// Back face
-	0.0f, 0.0f,
-	1.0f, 0.0f,
-	1.0f, 1.0f,
-	0.0f, 1.0f,
-
-	// Left face
-	1.0f, 0.0f,
-	0.0f, 0.0f,
-	0.0f, 1.0f,
-	1.0f, 1.0f,
-
-	// Right face
-	0.0f, 0.0f,
-	1.0f, 0.0f,
-	1.0f, 1.0f,
-	0.0f, 1.0f,
-
-	// Top face
-	1.0f, 1.0f,
-	0.0f, 1.0f,
-	0.0f, 0.0f,
-	1.0f, 0.0f,
-
-	// Bottom face
-	1.0f, 0.0f,
-	0.0f, 0.0f,
-	0.0f, 1.0f,
-	1.0f, 1.0f
-};
-
 constexpr GLuint cube_indices[] = {
 	// Front face
 	0, 2, 1, 2, 0, 3,
@@ -127,6 +92,13 @@ constexpr GLuint cube_indices[] = {
 
 	// Bottom face
 	3, 0, 2, 1, 2, 0,
+};
+
+constexpr float cube_texture_coords[] = {
+	0.0f, 1.0f,
+	0.0f, 0.0f,
+	1.0f, 0.0f,
+	1.0f, 1.0f,
 };
 
 namespace electrodiux::voxel::gfx {
@@ -156,33 +128,34 @@ namespace electrodiux::voxel::gfx {
 	char getExposedFaces(const world::ChunkData* data, int x, int y, int z) {
 		char exposed_faces = 0;
 
-		if (data->getBlock(x, y + 1, z) == world::AIR)
+		if (data->getBlock(x, y + 1, z) == block::AIR)
 			exposed_faces |= FACE_TOP_MASK;
-		if (data->getBlock(x, y - 1, z) == world::AIR)
+		if (data->getBlock(x, y - 1, z) == block::AIR)
 			exposed_faces |= FACE_BOTTOM_MASK;
-		if (data->getBlock(x + 1, y, z) == world::AIR)
+		if (data->getBlock(x + 1, y, z) == block::AIR)
 			exposed_faces |= FACE_LEFT_MASK;
-		if (data->getBlock(x - 1, y, z) == world::AIR)
+		if (data->getBlock(x - 1, y, z) == block::AIR)
 			exposed_faces |= FACE_RIGHT_MASK;
-		if (data->getBlock(x, y, z + 1) == world::AIR)
+		if (data->getBlock(x, y, z + 1) == block::AIR)
 			exposed_faces |= FACE_BACK_MASK;
-		if (data->getBlock(x, y, z - 1) == world::AIR)
+		if (data->getBlock(x, y, z - 1) == block::AIR)
 			exposed_faces |= FACE_FRONT_MASK;
 
 		return exposed_faces;
 	}
 
-	void addFace(std::vector<GLfloat>& data_buffer, std::vector<GLuint>& indices_buffer, glm::mat4& transform, int face, int& faces_count) {
+	void addFace(std::vector<GLfloat>& data_buffer, std::vector<GLuint>& indices_buffer, glm::mat4& transform, int face, int& faces_count, const block::BlockTexture& texture) {
 
-		for (int i = face * VERTICES_PER_FACE; i < face * VERTICES_PER_FACE + VERTICES_PER_FACE; i++) {
-			int index = i * POSITION_SIZE;
+		for (int i = 0; i < VERTICES_PER_FACE; i++) {
+			int index = (face * VERTICES_PER_FACE + i) * POSITION_SIZE;
 			glm::vec4 vertex = transform * glm::vec4(cube_vertices[index + 0], cube_vertices[index + 1], cube_vertices[index + 2], 1.0f);
 
 			data_buffer.push_back(vertex.x);
 			data_buffer.push_back(vertex.y);
 			data_buffer.push_back(vertex.z);
-			data_buffer.push_back(cube_tex_coords[i * TEXTURE_COORD_SIZE + 0]);
-			data_buffer.push_back(cube_tex_coords[i * TEXTURE_COORD_SIZE + 1]);
+			
+			data_buffer.push_back(texture.texture_coords[i * TEXTURE_COORD_SIZE + 0]);
+			data_buffer.push_back(texture.texture_coords[i * TEXTURE_COORD_SIZE + 1]);
 		}
 
 		int indices_offset = faces_count * VERTICES_PER_FACE;
@@ -207,37 +180,44 @@ namespace electrodiux::voxel::gfx {
 		for (int x = 0; x < world::CHUNK_SIZE; x++) {
 			for (int y = 0; y < world::CHUNK_SIZE; y++) {
 				for (int z = 0; z < world::CHUNK_SIZE; z++) {
-					if (data->getBlock(x, y, z) != world::AIR) {
-						char exposed_faces = getExposedFaces(data, x, y, z);
+					world::Block block_id = data->getBlock(x, y, z);
+					if (block_id != block::AIR) {
+						const block::BlockDefinition* block_definition = block::BlockRegister::getBlockDefinition(block_id);
+						if(block_definition == nullptr) continue;
 
-						if (exposed_faces == NO_FACES_MASK) {
-							continue;
+						char exposed_faces = ALL_FACES_MASK;
+
+						if (!block_definition->model->internal_faces) {
+							exposed_faces = getExposedFaces(data, x, y, z);
+							if (exposed_faces == NO_FACES_MASK) {
+								continue;
+							}
 						}
 
 						glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(x + data->location.x * world::CHUNK_SIZE, y + data->location.y * world::CHUNK_SIZE, z + data->location.z * world::CHUNK_SIZE));
 
 						if (exposed_faces & FACE_FRONT_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_FRONT, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_FRONT, faces_count, block_definition->model->getFaceTexture(block::FACE_FRONT));
 						}
 
 						if (exposed_faces & FACE_BACK_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_BACK, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_BACK, faces_count, block_definition->model->getFaceTexture(block::FACE_BACK));
 						}
 
 						if (exposed_faces & FACE_LEFT_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_LEFT, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_LEFT, faces_count, block_definition->model->getFaceTexture(block::FACE_LEFT));
 						}
 
 						if (exposed_faces & FACE_RIGHT_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_RIGHT, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_RIGHT, faces_count, block_definition->model->getFaceTexture(block::FACE_RIGHT));
 						}
 
 						if (exposed_faces & FACE_TOP_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_TOP, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_TOP, faces_count, block_definition->model->getFaceTexture(block::FACE_TOP));
 						}
 
 						if (exposed_faces & FACE_BOTTOM_MASK) {
-							addFace(data_buffer, indices_buffer, transform, FACE_BOTTOM, faces_count);
+							addFace(data_buffer, indices_buffer, transform, FACE_BOTTOM, faces_count, block_definition->model->getFaceTexture(block::FACE_BOTTOM));
 						}
 					}
 				}
@@ -255,7 +235,7 @@ namespace electrodiux::voxel::gfx {
 
 		glGenBuffers(1, &ebo_id);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_id);
-		int indices_count = indices_buffer.size();
+		int indices_count = (int) indices_buffer.size();
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(GLuint), indices_buffer.data(), GL_STATIC_DRAW);
 
 		glVertexAttribPointer(POSITION_POINTER, POSITION_SIZE, GL_FLOAT, GL_FALSE, VERTEX_STRIDE, (GLvoid*) POSITION_OFFSET);
