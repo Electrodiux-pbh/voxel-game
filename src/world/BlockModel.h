@@ -22,13 +22,16 @@ namespace electrodiux::voxel::block {
 
 	BlockTexture& atlasTexture(int atlas_face, int atlas_width, int atlas_height, BlockTexture& texture);
 
-	struct BlockModel {
+	class BlockModel {
 
+		private:
 		BlockTexture* textures;
 
 		bool internal_faces;
+		bool transparent;
 
-		BlockModel(const BlockTexture& top, const BlockTexture& bottom, const BlockTexture& right, const BlockTexture& left, const BlockTexture& front, const BlockTexture& back, bool internal_faces) {
+		public:
+		BlockModel(const BlockTexture& top, const BlockTexture& bottom, const BlockTexture& right, const BlockTexture& left, const BlockTexture& front, const BlockTexture& back, bool internal_faces, bool transparent) {
 			BlockTexture* textures = new BlockTexture[6];
 
 			textures[FACE_TOP] = top;
@@ -40,6 +43,7 @@ namespace electrodiux::voxel::block {
 
 			this->textures = textures;
 			this->internal_faces = internal_faces;
+			this->transparent = transparent;
 		}
 
 		~BlockModel() {
@@ -48,6 +52,14 @@ namespace electrodiux::voxel::block {
 
 		BlockTexture getFaceTexture(int face) const {
 			return textures[face];
+		}
+
+		bool hasInternalFaces() const {
+			return internal_faces;
+		}
+
+		bool isTransparent() const {
+			return transparent;
 		}
 
 	};

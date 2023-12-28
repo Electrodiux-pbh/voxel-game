@@ -62,6 +62,24 @@ void loadBlocks() {
 		->setTexture(block::FACE_BOTTOM, oak_log_top_texture)
 		->create()
 	)->create();
+
+	block::BlockTexture glass_texture;
+	block::atlasTexture(9, 7, 2, glass_texture);
+	block::BlockRegister::registerBlock("glass", (block::BlockRegistryID*)&block::GLASS).setModel(
+		block::BlockRegister::registerCubeBlockModel(glass_texture)
+		.setTransparent(true)
+		->create()
+	)->create();
+
+	block::BlockTexture oak_leaves_texture;
+	block::atlasTexture(10, 7, 2, oak_leaves_texture);
+	block::BlockRegister::registerBlock("oak_leaves", (block::BlockRegistryID*)&block::OAK_LEAVES).setModel(
+		block::BlockRegister::registerCubeBlockModel(oak_leaves_texture)
+		.setTransparent(true)
+		->setInternalFaces(true)
+		->create()
+	)->create();
+
 }
 
 int main() {

@@ -13,4 +13,9 @@ namespace electrodiux::voxel::world {
         return block;
     }
 
+    const block::BlockDefinition* ArrayChunkData::getBlockDefinition(int x, int y, int z) const {
+        if (isOutOfBounds(x, y, z)) return nullptr;
+        return block::BlockRegister::getBlockDefinition(this->blocks[calculateChunkIndex(x, y, z)]);
+    }
+
 }

@@ -125,21 +125,32 @@ namespace electrodiux::voxel::gfx {
 		glBindVertexArray(0);
 	}
 
-	char getExposedFaces(const world::ChunkData* data, int x, int y, int z) {
+	bool isExposed(const block::BlockDefinition* other, const block::BlockDefinition* block) {
+		if(other == nullptr) return true;
+		if (other->model->isTransparent()) {
+			if (other == block) {
+				return block->model->hasInternalFaces();
+			}
+			return true;
+		}
+		return false;
+	}
+
+	char getExposedFaces(const world::ChunkData* data, int x, int y, int z, const block::BlockDefinition* block) {
 		char exposed_faces = 0;
 
-		if (data->getBlock(x, y + 1, z) == block::AIR)
+		if (isExposed(data->getBlockDefinition(x, y + 1, z), block))
 			exposed_faces |= FACE_TOP_MASK;
-		if (data->getBlock(x, y - 1, z) == block::AIR)
+		if (isExposed(data->getBlockDefinition(x, y - 1, z), block))
 			exposed_faces |= FACE_BOTTOM_MASK;
-		if (data->getBlock(x + 1, y, z) == block::AIR)
-			exposed_faces |= FACE_LEFT_MASK;
-		if (data->getBlock(x - 1, y, z) == block::AIR)
-			exposed_faces |= FACE_RIGHT_MASK;
-		if (data->getBlock(x, y, z + 1) == block::AIR)
-			exposed_faces |= FACE_BACK_MASK;
-		if (data->getBlock(x, y, z - 1) == block::AIR)
+		if (isExposed(data->getBlockDefinition(x, y, z - 1), block))
 			exposed_faces |= FACE_FRONT_MASK;
+		if (isExposed(data->getBlockDefinition(x, y, z + 1), block))
+			exposed_faces |= FACE_BACK_MASK;
+		if (isExposed(data->getBlockDefinition(x + 1, y, z), block))
+			exposed_faces |= FACE_LEFT_MASK;
+		if (isExposed(data->getBlockDefinition(x - 1, y, z), block))
+			exposed_faces |= FACE_RIGHT_MASK;
 
 		return exposed_faces;
 	}
@@ -187,8 +198,8 @@ namespace electrodiux::voxel::gfx {
 
 						char exposed_faces = ALL_FACES_MASK;
 
-						if (!block_definition->model->internal_faces) {
-							exposed_faces = getExposedFaces(data, x, y, z);
+						if (!block_definition->model->hasInternalFaces()) {
+							exposed_faces = getExposedFaces(data, x, y, z, block_definition);
 							if (exposed_faces == NO_FACES_MASK) {
 								continue;
 							}

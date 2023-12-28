@@ -378,7 +378,7 @@ namespace electrodiux {
 
 				if (input::keyboard->isKeyTyped(GLFW_KEY_E)) {
 					selected_block++;
-					if (selected_block > 7) {
+					if (selected_block > block::BlockRegister::ammonutOfRegisteredBlocks()) {
 						selected_block = block::DIRT;
 					}
 				}

@@ -47,6 +47,7 @@ namespace electrodiux::voxel::block {
 		private:
 		BlockTexture textures[6];
 		bool internal_faces = false;
+		bool transparent = false;
 
 		CubeBlockModelRegistryEntry(const BlockTexture& default_texture) {
 			for (int i = 0; i < 6; i++) {
@@ -66,6 +67,11 @@ namespace electrodiux::voxel::block {
 			this->internal_faces = internal_faces;
 			return this;
 		}
+
+		CubeBlockModelRegistryEntry* setTransparent(bool transparent) {
+			this->transparent = transparent;
+			return this;
+		}
 		
 		BlockModel* create();
 
@@ -75,6 +81,7 @@ namespace electrodiux::voxel::block {
 
 		public:
 		static BlockDefinitionRegistryEntry registerBlock(const BlockID& block_id, BlockRegistryID* registry_id = nullptr);
+		static unsigned int ammonutOfRegisteredBlocks();
 
 		static CubeBlockModelRegistryEntry registerCubeBlockModel();
 		static CubeBlockModelRegistryEntry registerCubeBlockModel(const BlockTexture& default_texture);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Block.h"
+#include "BlockRegister.h"
 #include <string>
 
 namespace electrodiux::voxel::world {
@@ -34,6 +35,7 @@ namespace electrodiux::voxel::world {
 	};
 
 	class ChunkData {
+		
 		public:
 		const ChunkLocation location;
 
@@ -44,32 +46,10 @@ namespace electrodiux::voxel::world {
 		virtual void setBlock(int x, int y, int z, Block block) {}
 
 		virtual Block getBlock(int x, int y, int z) const { return block::AIR; }
+
+		virtual const block::BlockDefinition* getBlockDefinition(int x, int y, int z) const { return nullptr; }
+
 	};
-
-	/*class PalleteChunkData : public ChunkData {
-		private:
-
-		typedef unsigned char PalleteIndex;
-
-		struct PalleteBlock {
-			Block block;
-			PalleteIndex index;
-			int count;
-		};
-
-		PalleteIndex blocks[BLOCKS_PER_CHUNK];
-		std::vector<PalleteBlock> pallete;
-
-		PalleteBlock getPalleteBlock(Block& block);
-
-		public:
-		~PalleteChunkData() override;
-
-		void setBlock(int x, int y, int z, Block& block) override;
-
-		Block& getBlock(int x, int y, int z) const override;
-
-	};*/
 
 	class ArrayChunkData : public ChunkData {
 		private:
@@ -88,6 +68,8 @@ namespace electrodiux::voxel::world {
 		void setBlock(int x, int y, int z, Block block) override;
 
 		Block getBlock(int x, int y, int z) const override;
+
+		const block::BlockDefinition* getBlockDefinition(int x, int y, int z) const override;
 	};
 
 	class Chunk {

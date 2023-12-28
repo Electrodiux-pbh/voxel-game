@@ -5,11 +5,17 @@
 namespace electrodiux::voxel::block {
 
 	static BlockRegistryID block_registry_id_counter = 1; // Don't use 0 as a registry ID because it is reserved for NO_BLOCK or AIR
+	static unsigned int amount_of_registered_blocks = 0;
+	
 	static BlockDefinition* block_definitions[256] = { nullptr };
 	static std::vector<BlockModel*> block_models;
 
 	BlockDefinitionRegistryEntry BlockRegister::registerBlock(const BlockID& block_id, BlockRegistryID* registry_id) {
 		return BlockDefinitionRegistryEntry(block_id, registry_id);
+	}
+
+	unsigned int BlockRegister::ammonutOfRegisteredBlocks() {
+		return amount_of_registered_blocks;
 	}
 
 	CubeBlockModelRegistryEntry BlockRegister::registerCubeBlockModel() {
@@ -43,6 +49,7 @@ namespace electrodiux::voxel::block {
 			*registry_id_ptr = block_registry_id_counter;
 		}
 		block_registry_id_counter++;
+		amount_of_registered_blocks++;
 
 		block_definitions[definition->registry_id] = definition;
 
@@ -57,7 +64,7 @@ namespace electrodiux::voxel::block {
 		textures[FACE_LEFT],
 		textures[FACE_FRONT],
 		textures[FACE_BACK],
-		internal_faces);
+		internal_faces, transparent);
 		
 		block_models.push_back(block_model);
 		

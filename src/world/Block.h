@@ -8,16 +8,6 @@ namespace electrodiux::math {
 
 namespace electrodiux::voxel::world {
 
-	/*struct Block {
-		int id;
-
-		Block() : id(0) {}
-		Block(int id) : id(id) {}
-
-		bool operator== (const Block& other) {
-			return id == other.id;
-		}
-	};*/
 	typedef unsigned char Block;
 
 }
@@ -42,6 +32,8 @@ namespace electrodiux::voxel::block {
 	extern world::Block OAK_PLANKS;
 	extern world::Block STONE_BRICKS;
 	extern world::Block OAK_LOG;
+	extern world::Block GLASS;
+	extern world::Block OAK_LEAVES;
 
 	#endif
 

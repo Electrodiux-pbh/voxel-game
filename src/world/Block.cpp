@@ -12,5 +12,7 @@ namespace electrodiux::voxel::block {
 	Block OAK_PLANKS;
 	Block STONE_BRICKS;
 	Block OAK_LOG;
+	Block GLASS;
+	Block OAK_LEAVES;
 
 }
